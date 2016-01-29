@@ -5,11 +5,9 @@
  * @package		jquery-1.10.1
  * @author		Aleksei Zhulitov (https://github.com/laosun)
  * @title		Модуль модальных окон.
- * @version		1.1 (alpha)
+ * @version		1.2
  * 
- * @link		https://github.com/milaxcom/modal_window
- * 
- * @todo		[в процессе]
+ * @link		https://github.com/laosun/jQueryModalWindow
  */
 ( function( $ ) {
 	var CORE	= {
@@ -544,7 +542,7 @@
 					});
 					
 				// Вешаем обработчик закрытия на элемент с установленным классом "close_class".
-				$( this.settings.close_class, $window )/**/.on( "click", function(){
+				$( this.settings.close_class, $window )/**/.live( "click", function(){
 					$window.trigger( "close" );
 				});
 			/**#2-*/
