@@ -85,6 +85,29 @@
 			close			: function( once ){},
 		/**#@-*/
 		
+			Esc_close		: function ( e )
+			{
+				if ( e.keyCode == "27" )
+				{
+					var l = CORE.CACHE.length;
+					while ( (l--) > 0 )
+					{
+						if ( typeof CORE.CACHE[l] == "object" )
+						{
+							var $window = CORE.CACHE[l][0].window;
+							if ( $window.css( "display" ) != "none" )
+							{
+								$window.trigger( "close" );
+								break;
+							}
+						}
+					}
+					
+					var i = 0; for ( var _ in CORE.CACHE ) i++;
+					if ( i == 0 )$( CORE.$el.body ).unbind( "keyup", CORE.Esc_close );
+				}
+			},
+		
 		/** ###################################### */
 		/** ########## КАРТЫ ЭЛЕМЕНТОВ ########### */
 		/** Контейнер всего окна (карта элемента). */
@@ -104,8 +127,25 @@
 			},
 			
 			// Верхний и нижний сепараторы array( "елемент", "класс", "стиль" )
-			"sep-top"		: [ "div", "modal-win-space-top", "position:relative;width:100%;height:50px;" ],
-			"sep-down"		: [ "div", "modal-win-space-bottom", "position:relative;width:100%;height:40px;"]
+			"sep-top"		: {
+				"tag"	:"div",
+				"class"	: "modal-win-space-top",
+				"html"	: "",
+				"style" : {
+					"position"	: "relative",
+					"width"		: "100%",
+					"height"	: "50px"
+				}
+			},
+			"sep-down"		: {
+				"tag"	: "div",
+				"class"	: "modal-win-space-bottom",
+				"style"	: {
+					"position"	: "relative",
+					"width"		: "100%",
+					"height"	: "40px;"
+				}
+			}
 		},
 		
 		/** Контейнер для текста (карта элемента). */
@@ -379,8 +419,8 @@
 						$shadow		= $elements.shadow,
 						ModalWin	= CORE.CACHE[ CACHE[i] ][1];
 					
-							// once = true (скрыть)
-					if ( ModalWin.settings.once) {
+					// once = true (скрыть)
+					if ( ModalWin.settings.once ) {
 						Remove	= function( e ){
 							// Опциональный close.
 							var close	= ModalWin.close.call( $elements, true );
@@ -391,7 +431,8 @@
 							e.data["shadow"].hide();
 							$( this ).trigger( "unlock" );
 						};
-					}else { // once = false (удалить)
+					// once = false (удалить)
+					} else {
 						Remove	= function( e ){
 							// Опциональный close.
 							var close	= ModalWin.close.call( $elements, false );
@@ -473,16 +514,8 @@
 					zIndex		= CORE.get_zIndex(),
 					CACHE_index	= CORE.CACHE.length,
 					$window		= this._$.create( this.window )/**/.hide()/**/.css( "zIndex", zIndex ),
-					$sep_top	= this._$.create({
-						"tag" 	: this.window["sep-top"][0],
-						"class" : this.window["sep-top"][1],
-						"attr"	: {"style":this.window["sep-top"][2]}
-					}),
-					$sep_down	= this._$.create({
-						"tag" 	: this.window["sep-down"][0],
-						"class" : this.window["sep-down"][1],
-						"attr"	: {"style":this.window["sep-down"][2]}
-					}),
+					$sep_top	= this._$.create( this.window["sep-top"] ),
+					$sep_down	= this._$.create( this.window["sep-down"] ),
 					$container	= this._$.create( this.container ),
 					$shadow		= this._$.create( this.shadow )/**/.css( "zIndex", (zIndex-1) )
 									/**/.css( this.shadow.animate["off-style"]  ),
@@ -545,6 +578,9 @@
 				$( this.settings.close_class, $window )/**/.live( "click", function(){
 					$window.trigger( "close" );
 				});
+				
+				/* Esc Close */
+				$( ModalWin.$el.body ).unbind( "keyup", ModalWin.Esc_close ).on( "keyup", ModalWin.Esc_close );
 			/**#2-*/
 			
 			/**#3
@@ -601,12 +637,12 @@
 				from_CACHE	= false;
 			/**#1
 			 * Поиск в КЭШЕ уже имеющегося окна.
-			 * !(должен быть задан map.id)
+			 * !(должен быть задан map.id или map.container.id )
 			 */
-				if ( typeof map	== "object" && typeof map.id == "string" )
+				if ( typeof map	== "object" && ( typeof map.id == "string" || typeof map.container.id == "string" ) )
 				{
 					var $elements,
-						ID			= map.id.replace( /^#{1}/, "" );
+						ID			= (map.id||map.container.id).replace( /^#{1}/, "" );
 					// Просмотр КЭША.
 					for( var i in CORE.CACHE ) {
 						if ( typeof CORE.CACHE[i] == "object" && CORE.CACHE[i][0].container.attr( "id" ) == ID ) {
@@ -650,21 +686,21 @@
 			if( typeof map != "object" )
 				return ModalWin;
 			// id
-			ModalWin.container.id	= (typeof map.id == "string")		? map.id	: false;
+			ModalWin.container.id	= (typeof map.id == "string")		? map.id	: ModalWin.container.id;
 			
 			// once
-			ModalWin.settings.once	= (typeof map.once == "boolean")	? map.once	: false;
+			ModalWin.settings.once	= (typeof map.once == "boolean")	? map.once	: ModalWin.settings.once;
 			
 			// html
 			ModalWin.container.html	= (typeof map.html == "string")		? map.html	: ModalWin.container.html;
 			
 			// top-space
 			if ( typeof map["top-space"] == "string" )
-				ModalWin.window["sep-top"][2] = ModalWin.window["sep-top"][2].replace( /height:\d*.*;/, "height:" + map["top-space"] + ";" );
+				ModalWin.window["sep-top"]["style"]["height"] = map["top-space"];
 			
 			// bottom-space
 			if ( typeof map["bottom-space"] == "string" )
-				ModalWin.window["sep-down"][2] = ModalWin.window["sep-down"][2].replace( /height:\d*.*;/, "height:" + map["bottom-space"] + ";" );
+				ModalWin.window["sep-down"]["style"]["height"] = map["bottom-space"];
 				
 			// shadow
 			if ( typeof map.shadow == "string" )
@@ -759,13 +795,13 @@
 										ModalWin.settings.close_shadow	= ( typeof value == "boolean" ) ? value : ModalWin.settings.close_shadow;
 									break;
 								case "animateOn":
-										ModalWin.shadow.animateOn	= ( typeof value == "function" ) ? value : ModalWin.settings.close_shadow;
+										ModalWin.shadow.animateOn		= ( typeof value == "function" ) ? value : ModalWin.settings.close_shadow;
 									break;
 								case "animateOff":
-										ModalWin.shadow.animateOff	= ( typeof value == "function" ) ? value : ModalWin.settings.close_shadow;
+										ModalWin.shadow.animateOff		= ( typeof value == "function" ) ? value : ModalWin.settings.close_shadow;
 									break;
 								default:
-										ModalWin.shadow[key]				= map.shadow[key];
+										ModalWin.shadow[key]			= map.shadow[key];
 									break;
 							}
 						}/* END else */
